@@ -3,17 +3,7 @@ name: WoonVPS
 on:
   schedule:
     - cron: '2 */40 * * *'
-  workflow_dispatch:
-    inputs:
-      logLevel:
-        description: 'Log level'
-        required: true
-        default: 'warning'
-        type: choice
-        options:
-        - info
-        - warning
-        - debug
+  workflow_dispatch
 
 jobs:
   build:
