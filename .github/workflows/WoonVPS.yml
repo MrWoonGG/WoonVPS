@@ -1,12 +1,25 @@
 name: WoonVPS
 
-on: workflow_dispatch
+on:
+  schedule:
+    - cron: '2 */40 * * *'
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
 
 jobs:
   build:
 
     runs-on: windows-2019
-    timeout-minutes: 9999
+    timeout-minutes: 40
 
     steps:
     - name: Загрузка Ngrok.
