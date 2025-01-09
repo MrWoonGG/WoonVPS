@@ -1,55 +1,25 @@
 name: WoonVPS
 
-on:
-  schedule:
-    - cron: '2 */40 * * *'
-  workflow_dispatch:
-    inputs:
-      logLevel:
-        description: 'Log level'
-        required: true
-        default: 'warning'
-        type: choice
-        options:
-        - info
-        - warning
-        - debug
+on: [push, workflow_dispatch]
 
 jobs:
   build:
 
-    runs-on: windows-2019
-    timeout-minutes: 40
+    runs-on: windows-latest
 
     steps:
-    - name: Загрузка Ngrok.
-      run: |
-        Invoke-WebRequest https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
-        Invoke-WebRequest https://raw.githubusercontent.com/MrWoonGG/WoonVPS---public/main/start.bat -OutFile start.bat
-        Invoke-WebRequest https://raw.githubusercontent.com/MrWoonGG/WoonVPS---public/main/loop.bat -OutFile loop.bat
-        Invoke-WebRequest https://raw.githubusercontent.com/MrWoonGG/WoonVPS---public/main/uptime.bat -OutFile uptime.bat
-    - name: Загрузка программ.
-      run: |
-        Invoke-WebRequest https://raw.githubusercontent.com/MrWoonGG/WoonVPS---public/main/launcher/Node.js.lnk -OutFile Node.js.lnk
-        Invoke-WebRequest https://raw.githubusercontent.com/MrWoonGG/WoonVPS---public/main/launcher/FastConfigVPS_v2.3.exe -OutFile "FastConfigVPS_v2.3.exe"
-        Invoke-WebRequest https://raw.githubusercontent.com/MrWoonGG/WoonVPS---public/main/launcher/Visual%20Studio%202019.lnk -OutFile "Visual Studio 2019.lnk"
-    - name: Загрузка Ngrok файла.
+    - name: Download
+      run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
+    - name: Extract
       run: Expand-Archive ngrok.zip
-    - name: Подключение к учётной записи Ngrok.
+    - name: Auth
       run: .\ngrok\ngrok.exe authtoken 2GwFlUTUmCVL0fW96oQdUTiz3y5_2bEV4fMeCGc9g76yYYziG
-    - name: Включение доступа RDP.
-      run: | 
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
-        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-        copy Node.js.lnk C:\Users\Public\Desktop\Node.js.lnk
-        copy "FastConfigVPS_v2.3.exe" "C:\Users\Public\Desktop\FastConfigVPS_v2.3.exe"
-        copy "Visual Studio 2019.lnk" "C:\Users\Public\Desktop\Visual Studio 2019.lnk"
-    - name: Создание туннелей.
-      run: Start-Process Powershell -ArgumentList '-Noexit -Command ".\ngrok\ngrok.exe tcp --region ap 3389"'
-    - name: Загрузка данных для подключения.
-      run: |
-        cmd /c start.bat
-        cmd /c uptime.bat
-    - name: Всё готово! Вы можете закрыть вкладку.
-      run: cmd /c loop.bat
+      env:
+        NGROK_AUTH_TOKEN: 2GwFlUTUmCVL0fW96oQdUTiz3y5_2bEV4fMeCGc9g76yYYziG
+    - name: Enable TS
+      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+    - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+    - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+    - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+    - name: Create Tunnel
+      run: .\ngrok\ngrok.exe tcp 3389
